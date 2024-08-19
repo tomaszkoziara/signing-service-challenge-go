@@ -8,6 +8,7 @@ import (
 
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/domain/signature"
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/store"
+	"github.com/go-playground/validator"
 )
 
 type NewSignatureDevice struct {
@@ -41,8 +42,15 @@ func (s *Server) CreateSigningDevice(response http.ResponseWriter, request *http
 	var device NewSignatureDevice
 	err := json.NewDecoder(request.Body).Decode(&device)
 	if err != nil {
-		WriteAPIResponse(response, http.StatusBadRequest, APIError{
-			Message: "invalid request payload",
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			WriteAPIResponse(response, http.StatusBadRequest, APIError{
+				Message: fmt.Sprintf("invalid request payload: %v", ve.Error()),
+			})
+			return
+		}
+		WriteAPIResponse(response, http.StatusInternalServerError, APIError{
+			Message: "unexpected error",
 		})
 		return
 	}
